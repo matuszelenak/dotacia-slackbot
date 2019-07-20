@@ -34,7 +34,7 @@ class ISICQuerySet(models.QuerySet):
         return self.filter(active=True, usages__lt=ISIC.MAX_DAILY_USAGES)
 
     def prioritized(self):
-        return self.usable()
+        return self.usable().order_by('-priority', 'usages')
 
 
 class ISIC(models.Model):
@@ -53,3 +53,6 @@ class ISIC(models.Model):
     @property
     def number_pretty_print(self):
         return f'*{self.number[:5]} {self.number[5:9]} {self.number[9:13]} {self.number[13:]}*'
+
+    def __str__(self):
+        return f'ISIC {self.number} ({self.holder.username}) : {self.usages} usages, priority {self.priority}'

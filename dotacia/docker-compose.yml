@@ -1,0 +1,46 @@
+version: '3'
+services:
+  db:
+    image: postgres:10.1-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=dotacia
+      - POSTGRES_DB=dotacia
+    ports:
+      - "5432:5432"
+  dotacia:
+    build: .
+    image: dotacia
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/dotacia
+    depends_on:
+      - db
+      - redis
+      - celery
+    command: python manage.py runserver 0.0.0.0:8000
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+  celery:
+    build: .
+    depends_on:
+      - db
+      - redis
+    command: celery -A dotacia worker -l info
+    volumes:
+      - .:/dotacia
+  celery-beat:
+    build: .
+    command: celery -A dotacia beat -l info
+    volumes:
+      - .:/dotacia
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:

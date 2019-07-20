@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 
 import os
 
+from celery.schedules import crontab
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -25,8 +27,7 @@ SECRET_KEY = '&kbikt8!r!*t#z7&lgc@)a-8+0du2ia!+e-*mc%*b$9j5#z)qn'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['dotacia.trojsten.sk', '555a1673.ngrok.io', 'localhost']
-
+ALLOWED_HOSTS = ['dotacia.trojsten.sk', '9ced77fc.ngrok.io', 'localhost']
 
 # Application definition
 
@@ -38,8 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'celery',
     'rest_framework',
-    'bot',
+
+    'bot'
 ]
 
 AUTH_USER_MODEL = 'bot.ISICHolder'
@@ -80,11 +83,13 @@ WSGI_APPLICATION = 'dotacia.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'dotacia',
+        'USER': 'dotacia',
+        'HOST': 'db',
+        'PORT': 5432
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
@@ -127,3 +132,13 @@ STATIC_URL = '/static/'
 
 SLACK_VERIFICATION_TOKEN = os.environ.get('SLACK_VERIFICATION_TOKEN')
 SLACK_BOT_USER_TOKEN = os.environ.get('SLACK_BOT_USER_TOKEN')
+
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+
+CELERY_BEAT_SCHEDULE = {
+    'reset-isics': {
+        'task': 'bot.tasks.ISICDailyResetTask',
+        'schedule': crontab(minute='*/5')
+    }
+}

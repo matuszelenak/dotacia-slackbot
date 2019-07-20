@@ -23,7 +23,6 @@ def register_number(slack_user_id, *args, **kwargs):
         holder.isic.delete()
         holder.isic.save()
 
-    print(kwargs)
     holder.isic = ISIC.objects.create(
         holder=holder,
         number=kwargs.get('number'),
@@ -35,7 +34,27 @@ def register_number(slack_user_id, *args, **kwargs):
 
 
 def give_number(*args, **kwargs):
-    pass
+    amount = kwargs.pop('amount')
+    isics = ISIC.objects.prioritized()
+    if not isics.exists():
+        return 'Unfortunately, the pool of ISIC numbers for today has been exhausted'
+
+    msg_parts, acc = [], 0
+    for isic in isics:
+        withdrawn_usages = ISIC.MAX_DAILY_USAGES - isic.usages
+        acc += withdrawn_usages
+        if acc >= amount:
+            withdrawn_usages -= (acc - amount)
+
+        isic.usages += withdrawn_usages
+        isic.save()
+
+        msg_parts.append(isic.number_pretty_print + (f' (x{withdrawn_usages})' if withdrawn_usages > 1 else ''))
+
+        if acc >= amount:
+            break
+
+    return '\n'.join(msg_parts)
 
 
 @requires_isic

@@ -3,6 +3,7 @@ from slack import WebClient
 
 from bot.constants import *
 from bot.actions import *
+from bot.tasks import ISICDailyResetTask
 
 
 def parse_dotacia_arguments(text):
@@ -18,14 +19,14 @@ def parse_dotacia_arguments(text):
         return {
             'action': give_number,
             'action_args': {
-                'amount': m.group('amount') or 1
+                'amount': int(m.group('amount')) or 1
             }
         }
 
     m = NUMBER_REGISTER_TEMPLATE.match(text)
     if m:
         number = m.group('number')
-        priority = m.group('priority') or ISIC.MAX_PRIORITY
+        priority = int(m.group('priority')) or ISIC.MAX_PRIORITY
         return {
             'action': register_number,
             'action_args': {
@@ -39,7 +40,7 @@ def parse_dotacia_arguments(text):
         return {
             'action': set_number_priority,
             'action_args': {
-                'priority': m.group('priority')
+                'priority': int(m.group('priority'))
             }
         }
 
