@@ -1,0 +1,5 @@
+venv/
+.idea/
+dotacia/db.sqlite3
+dotacia/dotacia/__pycache__/
+dotacia/bot/__pycache__/
