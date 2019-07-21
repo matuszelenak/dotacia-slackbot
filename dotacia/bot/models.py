@@ -86,3 +86,8 @@ class ISICUsageLog(models.Model):
 
     def __str__(self):
         return f'{self.requested_by.username} requested {self.isic.number_pretty_print} on {self.date_created}'
+
+
+class Meme(models.Model):
+    title = models.CharField(max_length=128, blank=True)
+    file = models.FileField()

@@ -86,7 +86,7 @@ DOTACIA_HELP_MESSAGE = '*Dotacia command usage:* \n' + '\n\n'.join(
 
 
 def handle_command(payload):
-    reply = None
+    reply, attachments = None, None
     if payload['command'] == '/dotacia':
         used_correctly = False
         for subcommand in DOTACIA_SUBCOMMANDS:
@@ -94,7 +94,7 @@ def handle_command(payload):
             if m:
                 action_args = m.groupdict()
                 action_args.update({'slack_user_id': payload['user_id']})
-                reply = subcommand['action'](**action_args)
+                reply, attachments = subcommand['action'](**action_args)
                 used_correctly = True
                 break
         if not used_correctly:
@@ -106,7 +106,10 @@ def handle_command(payload):
         sender = SlackUser.objects.for_user_id(payload['user_id'])
         client = WebClient(token=settings.SLACK_BOT_USER_TOKEN)
         message_kwargs = dict(channel=payload['channel_id'], text=reply)
+        if attachments:
+            message_kwargs['attachments'] = attachments
+        print(message_kwargs)
         if sender.slack_channel_id == payload['channel_id']:
-            client.chat_postMessage(**message_kwargs)
+            print(client.chat_postMessage(**message_kwargs))
         else:
             client.chat_postEphemeral(user=payload['user_id'], **message_kwargs)

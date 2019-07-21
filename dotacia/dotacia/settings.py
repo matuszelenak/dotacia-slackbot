@@ -27,7 +27,9 @@ SECRET_KEY = '&kbikt8!r!*t#z7&lgc@)a-8+0du2ia!+e-*mc%*b$9j5#z)qn'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['dotacia.trojsten.sk', 'fed91008.ngrok.io', 'localhost']
+CURRENT_HOST = 'fed91008.ngrok.io'
+
+ALLOWED_HOSTS = ['dotacia.trojsten.sk', 'localhost', CURRENT_HOST]
 
 # Application definition
 
@@ -142,3 +144,7 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(minute='*/5')
     }
 }
+
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
