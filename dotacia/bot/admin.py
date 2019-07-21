@@ -1,16 +1,18 @@
 from django.contrib import admin
 
-# Register your models here.
-from bot.models import ISIC, ISICHolder
+from bot.models import ISIC, SlackUser, ISICUsageLog
 
 
 @admin.register(ISIC)
 class ISICAdmin(admin.ModelAdmin):
-    def get_queryset(self, request):
-        print(ISIC.objects.prioritized())
-        return super().get_queryset(request)
+    pass
 
 
-@admin.register(ISICHolder)
-class ISICHolderAdmin(admin.ModelAdmin):
+@admin.register(SlackUser)
+class SlackUserAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(ISICUsageLog)
+class ISICUsageLogAdmin(admin.ModelAdmin):
     pass

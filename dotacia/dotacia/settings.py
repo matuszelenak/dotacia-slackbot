@@ -27,7 +27,7 @@ SECRET_KEY = '&kbikt8!r!*t#z7&lgc@)a-8+0du2ia!+e-*mc%*b$9j5#z)qn'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['dotacia.trojsten.sk', '9ced77fc.ngrok.io', 'localhost']
+ALLOWED_HOSTS = ['dotacia.trojsten.sk', 'fed91008.ngrok.io', 'localhost']
 
 # Application definition
 
@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'bot'
 ]
 
-AUTH_USER_MODEL = 'bot.ISICHolder'
+AUTH_USER_MODEL = 'bot.SlackUser'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
