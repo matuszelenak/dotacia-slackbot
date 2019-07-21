@@ -25,29 +25,59 @@ DOTACIA_SUBCOMMANDS = [
         'action': register_number,
     },
     {
-        'description': 'Sets the priority of your ISIC number (high, medium, low)',
+        'description': 'Sets the priority (high, medium, low) of your ISIC number',
         'example': '/dotacia priority high',
         'regex': re.compile('^priority +(?P<priority>{})$'.format('|'.join(desc for _, desc in ISIC.PRIORITY_CHOICES))),
         'action': set_number_priority,
     },
     {
-        'description': 'Removes your ISIC number from the shared pool',
+        'description': 'Sets the priority (high, medium, low) of the ISIC with specified last 4 digits',
+        'example': '/dotacia priority high',
+        'regex': re.compile('^priority +(?P<last_4>[0-9]{{4}}) +(?P<priority>{p})$'.format(p='|'.join(desc for _, desc in ISIC.PRIORITY_CHOICES))),
+        'action': set_number_priority,
+    },
+    {
+        'description': 'Removes your ISIC from the shared pool',
         'example': '/dotacia disable',
         'regex': re.compile('^disable$'),
         'action': disable_number,
     },
     {
-        'description': 'Includes your ISIC number into the shared pool',
+        'description': 'Removes the ISIC with specified last 4 digits from the shared pool',
+        'example': '/dotacia disable 2461',
+        'regex': re.compile('^disable +(?P<last_4>[0-9]{4})$'),
+        'action': disable_number,
+    },
+    {
+        'description': 'Includes your ISIC in the shared pool',
         'example': '/dotacia enable',
         'regex': re.compile('^enable$'),
         'action': enable_number,
     },
     {
-        'description': 'Includes your ISIC number into the shared pool',
+        'description': 'Includes the ISIC with specified last 4 digits in the shared pool',
+        'example': '/dotacia enable',
+        'regex': re.compile('^enable +(?P<last_4>[0-9]{4})$'),
+        'action': enable_number,
+    },
+    {
+        'description': 'Outputs your ISIC number and marks its usage',
         'example': '/dotacia use',
         'regex': re.compile('^use$'),
         'action': use_number,
     },
+    {
+        'description': 'Outputs the ISIC with specified last 4 digits and marks its usage',
+        'example': '/dotacia use',
+        'regex': re.compile('^use (?P<last_4>[0-9]{4})$'),
+        'action': use_number,
+    },
+    {
+        'description': 'Print out information about your ISIC card(s)',
+        'example': '/dotacia info',
+        'regex': re.compile('^info$'),
+        'action': print_info
+    }
 ]
 
 DOTACIA_HELP_MESSAGE = '*Dotacia command usage:* \n' + '\n\n'.join(

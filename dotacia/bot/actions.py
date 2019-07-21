@@ -8,40 +8,51 @@ from bot.tasks import NotifyHoldersOfUsageTask
 def requires_isic(func):
     def wrapper(*args, **kwargs):
         slack_user_id = kwargs.pop('slack_user_id')
+        last_4 = kwargs.get('last_4')
+
         holder = SlackUser.objects.for_user_id(slack_user_id)
-        if not holder.isic:
+        if not ISIC.objects.filter(holder=holder).exists():
             return 'You do not have any ISIC number registered'
-        kwargs.update({
-            'isic': holder.isic
-        })
+
+        if last_4:
+            isic = ISIC.objects.filter(holder=holder, number__endswith=last_4).first()
+            if not isic:
+                return 'None of your ISICs end with these digits'
+            else:
+                kwargs.update({'isic': isic})
+
+        else:
+            if ISIC.objects.filter(holder=holder).count() > 1:
+                return 'Please specify the last 4 digits of the ISIC'
+
+            kwargs.update({'isic': ISIC.objects.get(holder=holder)})
+
         return func(*args, **kwargs)
 
     return wrapper
 
 
-def register_number(slack_user_id, *args, **kwargs):
+def register_number(slack_user_id, number=None, **kwargs):
     holder = SlackUser.objects.for_user_id(slack_user_id)
-    if holder.isic:
-        if kwargs.get('number') == holder.isic.number:
-            return 'You already registered an ISIC with this number'
-        holder.isic.delete()
-        holder.isic.save()
+    if ISIC.objects.filter(number=number, holder=holder).exists():
+        return 'You already registered an ISIC with this number'
 
     try:
-        holder.isic = ISIC.objects.create(
+        isic = ISIC(
             holder=holder,
-            number=kwargs.get('number'),
+            number=number,
         )
-        holder.save()
-    except ValidationError as e:
-        return e.message
+        isic.full_clean()
+        isic.save()
+    except ValidationError:
+        return 'Invalid number'
 
-    return f'Number {holder.isic.number_pretty_print} successfully registered'
+    return f'Number {number} successfully registered'
 
 
-def give_number(*args, **kwargs):
-    amount = int(kwargs.get('amount', 1))
-    requested_by = SlackUser.objects.get(slack_user_id=kwargs.pop('slack_user_id'))
+def give_number(slack_user_id=None, amount=1, **kwargs):
+    amount = int(amount)
+    requested_by = SlackUser.objects.get(slack_user_id=slack_user_id)
     isics = ISIC.objects.exclude(holder=requested_by).prioritized()
 
     if not isics.exists():
@@ -75,27 +86,27 @@ def give_number(*args, **kwargs):
 
 
 @requires_isic
-def enable_number(isic=None):
+def enable_number(isic=None, **kwargs):
     isic.enabled = True
     isic.save()
-    return 'Sharing of your ISIC number enabled'
+    return f'Sharing of {isic.number_pretty_print} number enabled'
 
 
 @requires_isic
-def disable_number(isic=None):
+def disable_number(isic=None, **kwargs):
     isic.enabled = False
     isic.save()
-    return 'Sharing of your ISIC number disabled'
+    return f'Sharing of {isic.number_pretty_print} disabled'
 
 
 @requires_isic
-def use_number(isic=None):
+def use_number(isic=None, **kwargs):
     isic.usages += 1
     isic.save()
 
     msg = isic.number_pretty_print
     if isic.usages > ISIC.MAX_DAILY_USAGES:
-        msg += ':warning: It seems you have no dotations left'
+        msg += ' :warning: It seems you have no dotations left :warning:'
 
     return msg
 
@@ -107,5 +118,15 @@ def set_number_priority(isic=None, **kwargs):
         if k == priority:
             isic.priority = v
             isic.save()
-            return 'Priority successfully changed'
+            return f'Priority of {isic.number_pretty_print} successfully changed'
     return 'Invalid priority specified'
+
+
+def print_info(slack_user_id, **kwargs):
+    holder = SlackUser.objects.for_user_id(slack_user_id)
+    return '\n'.join(
+        [
+            f'ISIC {x.number_pretty_print}, {x.get_priority_display()} priority, used {x.usages} dotations today'
+            for x in ISIC.objects.filter(holder=holder)
+        ]
+    )

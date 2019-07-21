@@ -1,9 +1,8 @@
 from django.conf import settings
 from django.contrib.auth.models import User, AbstractUser, UserManager
+from django.core.validators import RegexValidator
 from django.db import models
 from slack import WebClient
-
-from bot.utils import validate_isic_number
 
 
 class SlackUserManager(UserManager):
@@ -30,11 +29,10 @@ class SlackUserManager(UserManager):
 class SlackUser(AbstractUser):
     slack_user_id = models.CharField(max_length=20, null=True, blank=True, unique=True)
     slack_channel_id = models.CharField(max_length=20, null=True, blank=True, unique=True)
-    isic = models.OneToOneField('bot.ISIC', on_delete=models.CASCADE, related_name='holder', null=True, blank=True)
     objects = SlackUserManager()
 
     def __str__(self):
-        return f'{self.username} ({self.slack_user_id})' + (f' holder of {self.isic.number_pretty_print}' if self.isic else '')
+        return f'{self.username} ({self.slack_user_id})'
 
 
 class ISICQuerySet(models.QuerySet):
@@ -42,7 +40,7 @@ class ISICQuerySet(models.QuerySet):
         return self.filter(active=True, usages__lt=ISIC.MAX_DAILY_USAGES)
 
     def prioritized(self):
-        return self.usable().order_by('-priority', 'usages')
+        return self.usable().order_by('-priority', 'usages', '?')
 
 
 class ISIC(models.Model):
@@ -57,7 +55,14 @@ class ISIC(models.Model):
         (PRIORITY_HIGH, 'high')
     )
 
-    number = models.CharField(max_length=17, validators=[validate_isic_number])
+    holder = models.ForeignKey('bot.SlackUser', on_delete=models.CASCADE, related_name='isics')
+    number = models.CharField(blank=False, max_length=17, validators=[
+        RegexValidator(
+            regex='^[0-9]{17}$',
+            message='ISIC number must have 17 digits',
+            code='invalid_number'
+        )
+    ])
 
     active = models.BooleanField(default=True)
     usages = models.PositiveIntegerField(default=0)
