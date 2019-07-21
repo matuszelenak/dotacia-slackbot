@@ -1,7 +1,8 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from bot.models import SlackUser, ISIC, ISICUsageLog
+from bot.models import SlackUser, ISIC, ISICUsageLog, Meme
 from bot.tasks import NotifyHoldersOfUsageTask
 
 
@@ -32,6 +33,16 @@ def requires_isic(func):
     return wrapper
 
 
+def with_attachment(func):
+    def wrapper(*args, **kwargs):
+        res = func(*args, **kwargs)
+        if isinstance(res, tuple):
+            return res
+        return res, None
+    return wrapper
+
+
+@with_attachment
 def register_number(slack_user_id, number=None, **kwargs):
     holder = SlackUser.objects.for_user_id(slack_user_id)
     if ISIC.objects.filter(number=number, holder=holder).exists():
@@ -82,9 +93,14 @@ def give_number(slack_user_id=None, amount=1, **kwargs):
 
     transaction.on_commit(lambda: NotifyHoldersOfUsageTask().delay(usage_log_pks=usage_log_pks))
 
-    return '\n'.join(msg_parts)
+    meme = Meme.objects.order_by('?').first()
+    return '\n'.join(msg_parts), [{
+        "fallback": meme.title,
+        "image_url": 'https://' + settings.CURRENT_HOST + meme.file.url,
+    }] if amount == 1 else None
 
 
+@with_attachment
 @requires_isic
 def enable_number(isic=None, **kwargs):
     isic.enabled = True
@@ -92,6 +108,7 @@ def enable_number(isic=None, **kwargs):
     return f'Sharing of {isic.number_pretty_print} number enabled'
 
 
+@with_attachment
 @requires_isic
 def disable_number(isic=None, **kwargs):
     isic.enabled = False
@@ -99,6 +116,7 @@ def disable_number(isic=None, **kwargs):
     return f'Sharing of {isic.number_pretty_print} disabled'
 
 
+@with_attachment
 @requires_isic
 def use_number(isic=None, **kwargs):
     isic.usages += 1
@@ -111,6 +129,7 @@ def use_number(isic=None, **kwargs):
     return msg
 
 
+@with_attachment
 @requires_isic
 def set_number_priority(isic=None, **kwargs):
     priority = kwargs.pop('priority')
@@ -122,6 +141,7 @@ def set_number_priority(isic=None, **kwargs):
     return 'Invalid priority specified'
 
 
+@with_attachment
 def print_info(slack_user_id, **kwargs):
     holder = SlackUser.objects.for_user_id(slack_user_id)
     return '\n'.join(
